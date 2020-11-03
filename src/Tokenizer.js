@@ -487,8 +487,8 @@ module.exports = class Tokenizer {
     var cap = this.rules.inline.termLink.exec(src);
 
     if (cap) {
-      var lastParenIndex = findClosingBracket$1(cap[2], '()');
-      lastParenIndex = lastParenIndex > -1 ? lastParenIndex : findClosingBracket$1(cap[2], '{}');
+      var lastParenIndex = findClosingBracket(cap[2], '()');
+      lastParenIndex = lastParenIndex > -1 ? lastParenIndex : findClosingBracket(cap[2], '{}');
 
       if (lastParenIndex > -1) {
         var start = 4;
