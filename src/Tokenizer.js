@@ -30,6 +30,18 @@ function outputLink(cap, link, raw) {
   }
 }
 
+function outputTermLink(cap, link, raw) {
+  var term = link.term;
+  var text = cap[2] ? cap[2].replace(/\\([\[\]\{\}])/g, '$1') : undefined;
+
+  return {
+    type: 'termLink',
+    raw: raw,
+    term: term,
+    text: text
+  };
+}
+
 function indentCodeCompensation(raw, text) {
   const matchIndentToCode = raw.match(/^(\s+)(?:```)/);
 
@@ -470,6 +482,46 @@ module.exports = class Tokenizer {
       return token;
     }
   }
+
+  termLink(src) {
+    var cap = this.rules.inline.termLink.exec(src);
+
+    if (cap) {
+      var lastParenIndex = findClosingBracket$1(cap[2], '()');
+      lastParenIndex = lastParenIndex > -1 ? lastParenIndex : findClosingBracket$1(cap[2], '{}');
+
+      if (lastParenIndex > -1) {
+        var start = 4;
+        var linkLen = start + cap[1].length + lastParenIndex;
+        cap[2] = cap[2].substring(0, lastParenIndex);
+        cap[0] = cap[0].substring(0, linkLen).trim();
+        cap[3] = '';
+      }
+
+      var term = cap[1];
+      var title = '';
+
+      if (this.options.pedantic) {
+        var link = /^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(href);
+
+        if (link) {
+          term = link[1];
+          title = link[3];
+        } else {
+          title = '';
+        }
+      } else {
+        title = cap[3] ? cap[3].slice(1, -1) : '';
+      }
+
+      term = term.trim().replace(/^<([\s\S]*)>$/, '$1');
+      var token = outputTermLink(cap, {
+        term: term ? term.replace(this.rules.inline._escapes, '$1') : term,
+        title: title ? title.replace(this.rules.inline._escapes, '$1') : title
+      }, cap[0]);
+      return token;
+    }
+  };
 
   reflink(src, links) {
     let cap;

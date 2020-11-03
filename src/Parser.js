@@ -219,6 +219,10 @@ module.exports = class Parser {
           out += renderer.link(token.href, token.title, this.parseInline(token.tokens, renderer));
           break;
         }
+        case 'termlink': {
+          out += renderer.termLink(token.term, token.title, this.parseInline(token.tokens, renderer));
+          break;
+        }
         case 'image': {
           out += renderer.image(token.href, token.title, token.text);
           break;

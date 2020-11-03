@@ -166,6 +166,7 @@ const inline = {
     + '|^<![a-zA-Z]+\\s[\\s\\S]*?>' // declaration, e.g. <!DOCTYPE html>
     + '|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>', // CDATA section
   link: /^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/,
+  termLink: /^!?\!\{(term)\}\(\s*(label)(?:\s+(title))?\s*\)/,
   reflink: /^!?\[(label)\]\[(?!\s*\])((?:\\[\[\]]?|[^\[\]\\])+)\]/,
   nolink: /^!?\[(?!\s*\])((?:\[[^\[\]]*\]|\\[\[\]]|[^\[\]])*)\](?:\[\])?/,
   reflinkSearch: 'reflink|nolink(?!\\()',
@@ -258,10 +259,17 @@ inline.tag = edit(inline.tag)
 inline._label = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
 inline._href = /<(?:\\[<>]?|[^\s<>\\])*>|[^\s\x00-\x1f]*/;
 inline._title = /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/;
+inline._term = /[\w\d]+[\w\d_/]*/
 
 inline.link = edit(inline.link)
   .replace('label', inline._label)
   .replace('href', inline._href)
+  .replace('title', inline._title)
+  .getRegex();
+
+inline.termLink = edit(inline.termLink)
+  .replace('label', inline._label)
+  .replace('term', inline._term)
   .replace('title', inline._title)
   .getRegex();
 
@@ -299,6 +307,11 @@ inline.pedantic = merge({}, inline.normal, {
   },
   link: edit(/^!?\[(label)\]\((.*?)\)/)
     .replace('label', inline._label)
+    .getRegex(),
+
+  termLink: edit(/^!?\!\{(term)\}\(\s*(label)\s*\)/)
+    .replace('label', inline._label)
+    .replace('term', inline._term)
     .getRegex(),
   reflink: edit(/^!?\[(label)\]\s*\[([^\]]*)\]/)
     .replace('label', inline._label)

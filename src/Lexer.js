@@ -378,6 +378,18 @@ module.exports = class Lexer {
         continue;
       }
 
+      // termlink
+      if (token = this.tokenizer.termLink(src)) {
+        src = src.substring(token.raw.length);
+
+        if (token.type === 'termLink') {
+          token.tokens = this.inlineTokens(token.text, [], true, inRawBlock);
+        }
+
+        tokens.push(token);
+        continue;
+      }
+
       // reflink, nolink
       if (token = this.tokenizer.reflink(src, this.tokens.links)) {
         src = src.substring(token.raw.length);
