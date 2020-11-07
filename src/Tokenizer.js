@@ -6,6 +6,17 @@ const {
   findClosingBracket
 } = require('./helpers.js');
 
+function outputColor(cap, color, raw) {
+  var text = cap[1] ? cap[1].replace(/\\([\[\]\{\}])/g, '$1') : '';
+
+  return {
+    type: 'color',
+    raw: raw,
+    color: color,
+    text: text
+  };
+}
+
 function outputLink(cap, link, raw) {
   const href = link.href;
   const title = link.title ? escape(link.title) : null;
@@ -449,6 +460,28 @@ module.exports = class Tokenizer {
     }
   }
 
+  color(src) {
+    var cap = this.rules.inline.color.exec(src);
+
+    if (cap) {
+      var lastParenIndex = findClosingBracket(cap[2], '()');
+
+      if (lastParenIndex > -1) {
+        var start = 4;
+        var linkLen = start + cap[1].length + lastParenIndex;
+        cap[2] = cap[2].substring(0, lastParenIndex);
+        cap[0] = cap[0].substring(0, linkLen).trim();
+        cap[3] = '';
+      }
+
+      var color = cap[2];
+
+      color = color.trim().replace(/^<([\s\S]*)>$/, '$1');
+      var token = outputColor(cap, color ? color.replace(this.rules.inline._escapes, '$1') : color, cap[0]);
+      return token;
+    }
+  };
+
   link(src) {
     const cap = this.rules.inline.link.exec(src);
     if (cap) {
@@ -491,7 +524,7 @@ module.exports = class Tokenizer {
       lastParenIndex = lastParenIndex > -1 ? lastParenIndex : findClosingBracket(cap[2], '{}');
 
       if (lastParenIndex > -1) {
-        var start = 4;
+        var start = 5;
         var linkLen = start + cap[1].length + lastParenIndex;
         cap[2] = cap[2].substring(0, lastParenIndex);
         cap[0] = cap[0].substring(0, linkLen).trim();

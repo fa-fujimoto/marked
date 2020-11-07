@@ -166,7 +166,8 @@ const inline = {
     + '|^<![a-zA-Z]+\\s[\\s\\S]*?>' // declaration, e.g. <!DOCTYPE html>
     + '|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>', // CDATA section
   link: /^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/,
-  termLink: /^!?\!\{(term)\}\(\s*(label)(?:\s+(title))?\s*\)/,
+  termLink: /^\!\{(term)\}\(\s*(label)(?:\s+(title))?\s*\)/,
+  color: /^\{(label)\}\(\s*(color)?\s*\)/,
   reflink: /^!?\[(label)\]\[(?!\s*\])((?:\\[\[\]]?|[^\[\]\\])+)\]/,
   nolink: /^!?\[(?!\s*\])((?:\[[^\[\]]*\]|\\[\[\]]|[^\[\]])*)\](?:\[\])?/,
   reflinkSearch: 'reflink|nolink(?!\\()',
@@ -260,7 +261,12 @@ inline._label = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
 inline._href = /<(?:\\[<>]?|[^\s<>\\])*>|[^\s\x00-\x1f]*/;
 inline._title = /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/;
 inline._term = /[\w\d]+[\w\d_/]*/
+inline._color = /(#[0-9a-fA-F]{3,6}|\w*)/
 
+inline.color = edit(inline.color)
+  .replace('label', inline._label)
+  .replace('color', inline._color)
+  .getRegex();
 inline.link = edit(inline.link)
   .replace('label', inline._label)
   .replace('href', inline._href)
