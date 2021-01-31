@@ -215,10 +215,6 @@ module.exports = class Parser {
           out += renderer.html(token.text);
           break;
         }
-        case 'color': {
-          out += renderer.color(token.color, this.parseInline(token.tokens, renderer));
-          break;
-        }
         case 'link': {
           out += renderer.link(token.href, token.title, this.parseInline(token.tokens, renderer));
           break;
@@ -229,6 +225,10 @@ module.exports = class Parser {
         }
         case 'image': {
           out += renderer.image(token.href, token.title, token.text);
+          break;
+        }
+        case 'color': {
+          out += renderer.color(token.color, this.parseInline(token.tokens, renderer));
           break;
         }
         case 'strong': {

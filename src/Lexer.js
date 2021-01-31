@@ -368,18 +368,6 @@ module.exports = class Lexer {
         continue;
       }
 
-      // color
-      if (token = this.tokenizer.color(src)) {
-        src = src.substring(token.raw.length);
-
-        if (token.type === 'color') {
-          token.tokens = this.inlineTokens(token.text, [], true, inRawBlock);
-        }
-
-        tokens.push(token);
-        continue;
-      }
-
       // link
       if (token = this.tokenizer.link(src)) {
         src = src.substring(token.raw.length);
@@ -408,6 +396,14 @@ module.exports = class Lexer {
         if (token.type === 'link') {
           token.tokens = this.inlineTokens(token.text, [], true, inRawBlock);
         }
+        tokens.push(token);
+        continue;
+      }
+
+      // color
+      if (token = this.tokenizer.color(src, maskedSrc, prevChar)) {
+        src = src.substring(token.raw.length);
+        token.tokens = this.inlineTokens(token.text, [], inLink, inRawBlock);
         tokens.push(token);
         continue;
       }

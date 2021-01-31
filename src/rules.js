@@ -166,11 +166,15 @@ const inline = {
     + '|^<![a-zA-Z]+\\s[\\s\\S]*?>' // declaration, e.g. <!DOCTYPE html>
     + '|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>', // CDATA section
   link: /^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/,
-  termLink: /^\!\{(term)\}\(\s*(label)(?:\s+(title))?\s*\)/,
-  color: /^\{(label)\}\(\s*(color)?\s*\)/,
+  termLink: /^\!\{(term)\}(\(\s*(label)\s*\))?/,
   reflink: /^!?\[(label)\]\[(?!\s*\])((?:\\[\[\]]?|[^\[\]\\])+)\]/,
   nolink: /^!?\[(?!\s*\])((?:\[[^\[\]]*\]|\\[\[\]]|[^\[\]])*)\](?:\[\])?/,
   reflinkSearch: 'reflink|nolink(?!\\()',
+  color: {
+    start: /^;;(color)\s/,
+    middle: /^;;(color)\s(?:(?:(?!overlapSkip)(?:[^;]|\\\;)|overlapSkip)|;(?:(?!overlapSkip)(?:[^;]|\\;)|overlapSkip)*?;)+?;;$/,
+    end: /[^\s];;(?!;)(?:(?=[punctuation*\s])|$)/
+  },
   strong: {
     start: /^(?:(\*\*(?=[*punctuation]))|\*\*)(?![\s])|__/, // (1) returns if starts w/ punctuation
     middle: /^\*\*(?:(?:(?!overlapSkip)(?:[^*]|\\\*)|overlapSkip)|\*(?:(?!overlapSkip)(?:[^*]|\\\*)|overlapSkip)*?\*)+?\*\*$|^__(?![\s])((?:(?:(?!overlapSkip)(?:[^_]|\\_)|overlapSkip)|_(?:(?!overlapSkip)(?:[^_]|\\_)|overlapSkip)*?_)+?)__$/,
@@ -197,9 +201,23 @@ inline.punctuation = edit(inline.punctuation).replace(/punctuation/g, inline._pu
 
 // sequences em should skip over [title](link), `code`, <html>
 inline._blockSkip = '\\[[^\\]]*?\\]\\([^\\)]*?\\)|`[^`]*?`|<[^>]*?>';
-inline._overlapSkip = '__[^_]*?__|\\*\\*\\[^\\*\\]*?\\*\\*';
+inline._overlapSkip = ';;[^;]*?;;|__[^_]*?__|\\*\\*\\[^\\*\\]*?\\*\\*';
 
 inline._comment = edit(block._comment).replace('(?:-->|$)', '-->').getRegex();
+
+inline._color = /(#[0-9a-fA-F]{1,6}|[a-zA-Z]*)/
+
+inline.color.start = edit(inline.color.start)
+  .replace(/color/g, inline._color)
+  .getRegex();
+inline.color.middle = edit(inline.color.middle)
+  .replace(/color/g, inline._color)
+  .replace(/punctuation/g, inline._punctuation)
+  .replace(/overlapSkip/g, inline._overlapSkip)
+  .getRegex();
+inline.color.end = edit(inline.color.end)
+  .replace(/punctuation/g, inline._punctuation)
+  .getRegex();
 
 inline.em.start = edit(inline.em.start)
   .replace(/punctuation/g, inline._punctuation)
@@ -261,12 +279,7 @@ inline._label = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
 inline._href = /<(?:\\[<>]?|[^\s<>\\])*>|[^\s\x00-\x1f]*/;
 inline._title = /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/;
 inline._term = /[\w\d]+[\w\d_/]*/
-inline._color = /(#[0-9a-fA-F]{3,6}|\w*)/
 
-inline.color = edit(inline.color)
-  .replace('label', inline._label)
-  .replace('color', inline._color)
-  .getRegex();
 inline.link = edit(inline.link)
   .replace('label', inline._label)
   .replace('href', inline._href)
@@ -315,7 +328,7 @@ inline.pedantic = merge({}, inline.normal, {
     .replace('label', inline._label)
     .getRegex(),
 
-  termLink: edit(/^!?\!\{(term)\}\(\s*(label)\s*\)/)
+  termLink: edit(/^!?\!\{(term)\}\(\s*(label)?\s*\)/)
     .replace('label', inline._label)
     .replace('term', inline._term)
     .getRegex(),

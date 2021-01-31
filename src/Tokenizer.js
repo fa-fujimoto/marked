@@ -6,17 +6,6 @@ const {
   findClosingBracket
 } = require('./helpers.js');
 
-function outputColor(cap, color, raw) {
-  var text = cap[1] ? cap[1].replace(/\\([\[\]\{\}])/g, '$1') : '';
-
-  return {
-    type: 'color',
-    raw: raw,
-    color: color,
-    text: text
-  };
-}
-
 function outputLink(cap, link, raw) {
   const href = link.href;
   const title = link.title ? escape(link.title) : null;
@@ -43,7 +32,7 @@ function outputLink(cap, link, raw) {
 
 function outputTermLink(cap, link, raw) {
   var term = link.term;
-  var text = cap[2] ? cap[2].replace(/\\([\[\]\{\}])/g, '$1') : undefined;
+  var text = cap[3] ? cap[3].replace(/\\([\[\]\{\}])/g, '$1') : undefined;
 
   return {
     type: 'termLink',
@@ -460,28 +449,6 @@ module.exports = class Tokenizer {
     }
   }
 
-  color(src) {
-    var cap = this.rules.inline.color.exec(src);
-
-    if (cap) {
-      var lastParenIndex = findClosingBracket(cap[2], '()');
-
-      if (lastParenIndex > -1) {
-        var start = 4;
-        var linkLen = start + cap[1].length + lastParenIndex;
-        cap[2] = cap[2].substring(0, lastParenIndex);
-        cap[0] = cap[0].substring(0, linkLen).trim();
-        cap[3] = '';
-      }
-
-      var color = cap[2];
-
-      color = color.trim().replace(/^<([\s\S]*)>$/, '$1');
-      var token = outputColor(cap, color ? color.replace(this.rules.inline._escapes, '$1') : color, cap[0]);
-      return token;
-    }
-  };
-
   link(src) {
     const cap = this.rules.inline.link.exec(src);
     if (cap) {
@@ -520,15 +487,16 @@ module.exports = class Tokenizer {
     var cap = this.rules.inline.termLink.exec(src);
 
     if (cap) {
-      var lastParenIndex = findClosingBracket(cap[2], '()');
-      lastParenIndex = lastParenIndex > -1 ? lastParenIndex : findClosingBracket(cap[2], '{}');
+      if (!cap[3]) {
+        cap[3] = ''
+      }
+      var lastParenIndex = findClosingBracket(cap[3], '()');
 
       if (lastParenIndex > -1) {
         var start = 5;
         var linkLen = start + cap[1].length + lastParenIndex;
-        cap[2] = cap[2].substring(0, lastParenIndex);
+        cap[3] = cap[3].substring(0, lastParenIndex);
         cap[0] = cap[0].substring(0, linkLen).trim();
-        cap[3] = '';
       }
 
       var term = cap[1];
@@ -572,6 +540,62 @@ module.exports = class Tokenizer {
       }
       const token = outputLink(cap, link, cap[0]);
       return token;
+    }
+  }
+
+  color(src, maskedSrc, prevChar = '') {
+    let match = this.rules.inline.color.start.exec(src);
+
+    if (match && (!match[1] || (match[1] && (prevChar === '' || this.rules.inline.punctuation.exec(prevChar))))) {
+      const color = match[1]
+      let formatColor;
+      if (color[0] === '#') {
+        const _color = color.slice(1)
+
+        switch (_color.length) {
+          case 6:
+            formatColor = color
+            break;
+
+          case 5:
+            formatColor = color + '0'
+            break;
+          case 4:
+            formatColor = color + '00'
+            break;
+          case 3:
+            formatColor = color
+            break;
+          case 2:
+            formatColor = `#${_color + _color + _color}`
+            break;
+          case 1:
+            formatColor = `#${_color + _color + _color + _color + _color + _color}`
+            break;
+          default:
+            formatColor = color
+            break;
+        }
+      } else {
+        formatColor = color
+      }
+      maskedSrc = maskedSrc.slice(-1 * src.length);
+      const endReg = this.rules.inline.color.end;
+
+      endReg.lastIndex = 0;
+
+      let cap;
+      while ((match = endReg.exec(maskedSrc)) != null) {
+        cap = this.rules.inline.color.middle.exec(maskedSrc.slice(0, match.index + 3));
+        if (cap) {
+          return {
+            type: 'color',
+            raw: src.slice(0, cap[0].length),
+            text: src.slice(3 + color.length, cap[0].length - 2),
+            color: formatColor
+          };
+        }
+      }
     }
   }
 
